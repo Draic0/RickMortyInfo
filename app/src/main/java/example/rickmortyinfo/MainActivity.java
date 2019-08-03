@@ -1,12 +1,18 @@
 package example.rickmortyinfo;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.widget.LinearLayout;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -21,9 +27,14 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         contentHolder = (LinearLayout)findViewById(R.id.content_holder);
-        showFragment(FRAGMENT_LIST,null);
+        if(CommonOps.getSources(this)==null){
+            showFragment(FRAGMENT_WAIT, null);
+        }else {
+            showFragment(FRAGMENT_LIST, null);
+        }
     }
 
+    public static final String FRAGMENT_WAIT = "wait";
     public static final String FRAGMENT_LIST = "list";
     public static final String FRAGMENT_INFO = "info";
     public void showFragment(String tag, Bundle args){
@@ -38,6 +49,9 @@ public class MainActivity extends AppCompatActivity {
             case FRAGMENT_INFO:
                 fragment = new FragmentInfo();
                 fragmentTransaction.addToBackStack(tag);
+                break;
+            case FRAGMENT_WAIT:
+                fragment = new FragmentWait();
                 break;
             default:
                 return;

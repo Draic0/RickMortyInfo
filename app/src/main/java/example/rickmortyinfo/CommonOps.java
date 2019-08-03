@@ -6,6 +6,9 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.util.Log;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -57,7 +60,18 @@ public class CommonOps {
     public static Drawable getCachedImage(Context context, String name){
         return Drawable.createFromPath(getCachedImagesDir(context)+name);
     }
-    public static String getSources(Context context){
+    public static JSONArray getSources(Context context){
+        String src = getRawSources(context);
+        if(src!=null){
+            try {
+                return new JSONArray(src);
+            }catch(JSONException exc){
+                Log.e(TAG,Log.getStackTraceString(exc));
+            }
+        }
+        return null;
+    }
+    public static String getRawSources(Context context){
         File f = new File(context.getApplicationInfo().dataDir+File.separator+"SOURCES.txt");
         if(f.isFile()){
             String src = readFromFile(context,f.getPath());

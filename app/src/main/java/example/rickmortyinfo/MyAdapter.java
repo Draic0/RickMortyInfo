@@ -74,6 +74,7 @@ public class MyAdapter extends RecyclerView.Adapter {
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         final Character item = getItem(position);
         final ViewHolder h = (ViewHolder)holder;
+        h.counter++;
         h.text.setText(item.getName());
         h.view.setTag(item);
         Drawable img = item.getImage(context);
@@ -83,7 +84,6 @@ public class MyAdapter extends RecyclerView.Adapter {
             h.image.setImageDrawable(context.getResources().getDrawable(R.drawable.image_placeholder_24dp));
             final MessageToServer msg = new MessageToServer();
             msg.execute(item.getImgLink());
-            h.counter++;
             Thread trd = new Thread(new Runnable() {
                 @Override
                 public void run() {

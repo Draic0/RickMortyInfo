@@ -35,67 +35,9 @@ public class FragmentList extends Fragment {
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         final RecyclerView rv = (RecyclerView) getView().findViewById(R.id.list);
-        rv.setHasFixedSize(true);
+        rv.setHasFixedSize(false);
         rv.setLayoutManager(new LinearLayoutManager(getActivity()));
-        Thread trd = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                final JSONArray source = getListSources();
-                getActivity().runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        rv.setAdapter(new MyAdapter(getActivity(),source));
-                    }
-                });
-            }
-        });
-        trd.start();
-    }
-
-    private JSONArray getListSources(){
-        String src = CommonOps.getSources(getActivity());
-        if(src!=null){
-            try {
-                return new JSONArray(src);
-            }catch(JSONException exc){
-                Log.e(TAG,Log.getStackTraceString(exc));
-            }
-        }
-        String link = "https://rickandmortyapi.com/api/character/";
-        JSONArray results = new JSONArray();
-        do {
-            String response = getServerResponse(link);
-            if(response==null){
-                return results;
-            }
-            link = "";
-            try {
-                JSONObject obj = new JSONObject(response);
-                JSONArray arr = obj.getJSONArray("results");
-                for (int i = 0; i < arr.length(); i++) {
-                    results.put(arr.get(i));
-                }
-                JSONObject o = obj.getJSONObject("info");
-                link = o.getString("next");
-            } catch (JSONException exc) {
-                Log.e(TAG, Log.getStackTraceString(exc));
-            }
-        }while(link.length()>0);
-        CommonOps.cacheSources(getActivity(), results.toString());
-        return results;
-    }
-
-    private String getServerResponse(String request){
-        MessageToServer msg = new MessageToServer();
-        msg.execute(request);
-        try{
-            while (msg.getStatus() != AsyncTask.Status.FINISHED) {
-                Thread.sleep(300);
-            }
-        }catch(InterruptedException exc){
-            Log.e(TAG,Log.getStackTraceString(exc));
-        }
-        return msg.getServerTextResponse();
-
+        final JSONArray source = CommonOps.getSources(getActivity());
+        rv.setAdapter(new MyAdapter(getActivity(),source));
     }
 }
