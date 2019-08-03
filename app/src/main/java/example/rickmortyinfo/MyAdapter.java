@@ -47,6 +47,19 @@ public class MyAdapter extends RecyclerView.Adapter {
         }
     }
 
+    public void addMoreSources(JSONArray source){
+        try {
+            for (int i = 0; i < source.length(); i++) {
+                JSONObject obj = source.getJSONObject(i);
+                Character item = new Character(obj);
+                data.add(item);
+            }
+        }catch(JSONException exc){
+            Log.e(TAG,Log.getStackTraceString(exc));
+        }
+        notifyDataSetChanged();
+    }
+
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {

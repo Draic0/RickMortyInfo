@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
+import android.os.AsyncTask;
 import android.util.Log;
 
 import org.json.JSONArray;
@@ -40,6 +41,9 @@ public class CommonOps {
     }
 
     public static void cacheJpeg(Context context, Bitmap bmp, String name) {
+        if(bmp==null){
+            return;
+        }
         FileOutputStream out = null;
         File f = new File(getCachedImagesDir(context)+name);
         try {
@@ -106,5 +110,18 @@ public class CommonOps {
     private static final String spTag = "RickMorty";
     public static SharedPreferences getSharedPreferences(Context context){
         return context.getSharedPreferences(spTag,0);
+    }
+
+    public static String getServerResponse(String request){
+        MessageToServer msg = new MessageToServer();
+        msg.execute(request);
+        try{
+            while (msg.getStatus() != AsyncTask.Status.FINISHED) {
+                Thread.sleep(300);
+            }
+        }catch(InterruptedException exc){
+            Log.e(TAG,Log.getStackTraceString(exc));
+        }
+        return msg.getServerTextResponse();
     }
 }

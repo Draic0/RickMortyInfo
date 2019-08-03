@@ -1,5 +1,6 @@
 package example.rickmortyinfo;
 
+import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -76,8 +77,31 @@ public class FragmentWait extends Fragment {
         });
         String link = "https://rickandmortyapi.com/api/character/";
         JSONArray results = new JSONArray();
-        do {
-            String response = getServerResponse(link);
+        String response = CommonOps.getServerResponse(link);
+        if(response==null){
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    showBadConnection();
+                }
+            });
+            return;
+        }
+        try {
+            JSONObject obj = new JSONObject(response);
+            JSONArray arr = obj.getJSONArray("results");
+            for (int i = 0; i < arr.length(); i++) {
+                results.put(arr.get(i));
+            }
+            JSONObject o = obj.getJSONObject("info");
+            link = o.getString("next");
+            SharedPreferences sp = CommonOps.getSharedPreferences(getActivity());
+            sp.edit().putString("next",link).apply();
+        } catch (JSONException exc) {
+            Log.e(TAG, Log.getStackTraceString(exc));
+        }
+        /*do {
+            String response = CommonOps.getServerResponse(link);
             if(response==null){
                 getActivity().runOnUiThread(new Runnable() {
                     @Override
@@ -99,7 +123,7 @@ public class FragmentWait extends Fragment {
             } catch (JSONException exc) {
                 Log.e(TAG, Log.getStackTraceString(exc));
             }
-        }while(link.length()>0);
+        }while(link.length()>0);*/
         CommonOps.cacheSources(getActivity(), results.toString());
         getActivity().runOnUiThread(new Runnable() {
             @Override
@@ -113,19 +137,5 @@ public class FragmentWait extends Fragment {
         pb.setVisibility(View.GONE);
         label.setText("Could not load resources. Please check your internet connection.");
         button.setVisibility(View.VISIBLE);
-    }
-
-    private String getServerResponse(String request){
-        MessageToServer msg = new MessageToServer();
-        msg.execute(request);
-        try{
-            while (msg.getStatus() != AsyncTask.Status.FINISHED) {
-                Thread.sleep(300);
-            }
-        }catch(InterruptedException exc){
-            Log.e(TAG,Log.getStackTraceString(exc));
-        }
-        return msg.getServerTextResponse();
-
     }
 }
