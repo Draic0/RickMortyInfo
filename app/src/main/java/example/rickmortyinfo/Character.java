@@ -15,14 +15,14 @@ import java.io.Serializable;
 
 public class Character implements Serializable {
     private static final String TAG = "Character";
-    private JSONObject data;
+    private String data;
     public Character(JSONObject data){
-        this.data = data;
+        this.data = data.toString();
     }
     public String getStringValue(String key){
         String value = null;
         try{
-            value = data.getString(key);
+            value = new JSONObject(data).getString(key);
         }catch(JSONException exc){
             Log.e(TAG,Log.getStackTraceString(exc));
         }
@@ -31,7 +31,7 @@ public class Character implements Serializable {
     public Integer getIntValue(String key){
         Integer value = null;
         try{
-            value = data.getInt(key);
+            value = new JSONObject(data).getInt(key);
         }catch(JSONException exc){
             Log.e(TAG,Log.getStackTraceString(exc));
         }
@@ -67,7 +67,7 @@ public class Character implements Serializable {
     }
     public String getOrigin(){
         try {
-            JSONObject o = data.getJSONObject("origin");
+            JSONObject o = new JSONObject(data).getJSONObject("origin");
             return o.getString("name");
         }catch(JSONException exc){
             Log.e(TAG,Log.getStackTraceString(exc));
@@ -76,7 +76,7 @@ public class Character implements Serializable {
     }
     public String getLocation(){
         try {
-            JSONObject o = data.getJSONObject("location");
+            JSONObject o = new JSONObject(data).getJSONObject("location");
             return o.getString("name");
         }catch(JSONException exc){
             Log.e(TAG,Log.getStackTraceString(exc));
