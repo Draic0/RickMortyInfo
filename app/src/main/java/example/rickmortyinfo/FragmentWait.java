@@ -1,23 +1,14 @@
 package example.rickmortyinfo;
 
-import android.content.SharedPreferences;
-import android.graphics.drawable.Drawable;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 /**
  * Created by Draic0 on 03.08.2019.
@@ -48,89 +39,37 @@ public class FragmentWait extends Fragment {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Thread trd = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        loadSources();
-                    }
-                });
-                trd.start();
-            }
-        });
-        Thread trd = new Thread(new Runnable() {
-            @Override
-            public void run() {
                 loadSources();
             }
         });
-        trd.start();
+        loadSources();
     }
 
     private void loadSources(){
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                pb.setVisibility(View.VISIBLE);
-                button.setVisibility(View.GONE);
-                label.setText("Loading resources. Please wait.");
-            }
-        });
+        pb.setVisibility(View.VISIBLE);
+        button.setVisibility(View.GONE);
+        label.setText("Loading resources. Please wait.");
         String link = "https://rickandmortyapi.com/api/character/";
-        JSONArray results = new JSONArray();
-        String response = CommonOps.getServerResponse(link);
-        if(response==null){
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    showBadConnection();
-                }
-            });
-            return;
+        GetContentRequest rqst = new GetContentRequest(FragmentWait.this);
+        rqst.execute(link);
+
+    }
+
+    private static class GetContentRequest extends Request{
+        private FragmentWait fragment;
+        GetContentRequest(FragmentWait fragment){
+            this.fragment = fragment;
         }
-        try {
-            JSONObject obj = new JSONObject(response);
-            JSONArray arr = obj.getJSONArray("results");
-            for (int i = 0; i < arr.length(); i++) {
-                results.put(arr.get(i));
-            }
-            JSONObject o = obj.getJSONObject("info");
-            link = o.getString("next");
-            SharedPreferences sp = CommonOps.getSharedPreferences(getActivity());
-            sp.edit().putString("next",link).apply();
-        } catch (JSONException exc) {
-            Log.e(TAG, Log.getStackTraceString(exc));
-        }
-        /*do {
-            String response = CommonOps.getServerResponse(link);
-            if(response==null){
-                getActivity().runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        showBadConnection();
-                    }
-                });
+        @Override
+        protected void onPostExecute(Object response) {
+            super.onPostExecute(response);
+            if(response==null) {
+                fragment.showBadConnection();
                 return;
             }
-            link = "";
-            try {
-                JSONObject obj = new JSONObject(response);
-                JSONArray arr = obj.getJSONArray("results");
-                for (int i = 0; i < arr.length(); i++) {
-                    results.put(arr.get(i));
-                }
-                JSONObject o = obj.getJSONObject("info");
-                link = o.getString("next");
-            } catch (JSONException exc) {
-                Log.e(TAG, Log.getStackTraceString(exc));
-            }
-        }while(link.length()>0);*/
-        CommonOps.cacheSources(getActivity(), results.toString());
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                ((MainActivity)getActivity()).showFragment(MainActivity.FRAGMENT_LIST,null);
-            }
-        });
+            CommonOps.addNextSources(fragment.getActivity(),(String)response);
+            ((MainActivity)fragment.getActivity()).showFragment(MainActivity.FRAGMENT_LIST,null);
+        }
     }
 
     private void showBadConnection(){

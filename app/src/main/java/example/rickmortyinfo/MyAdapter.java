@@ -1,11 +1,9 @@
 package example.rickmortyinfo;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
@@ -95,36 +93,8 @@ public class MyAdapter extends RecyclerView.Adapter {
             h.image.setImageDrawable(img);
         }else{
             h.image.setImageDrawable(context.getResources().getDrawable(R.drawable.image_placeholder_24dp));
-            final MessageToServer msg = new MessageToServer();
-            msg.execute(item.getImgLink());
-            Thread trd = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    int test = h.counter;
-                    try{
-                        while(msg.getStatus()!= AsyncTask.Status.FINISHED) {
-                            Thread.sleep(300);
-                        }
-                    }catch(InterruptedException exc){
-                        Log.e(TAG,Log.getStackTraceString(exc));
-                    }
-                    Bitmap b = msg.getServerBitmapResponse();
-                    CommonOps.cacheJpeg(context, b, item.getImgName());
-                    if(test!=h.counter){
-                        return;
-                    }
-                    context.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Drawable d = item.getImage(context);
-                            if(d!=null) {
-                                h.image.setImageDrawable(d);
-                            }
-                        }
-                    });
-                }
-            });
-            trd.start();
+            GetImageRequest rqst = new GetImageRequest(this,h,item);
+            rqst.execute(item.getImgLink());
         }
     }
 
@@ -135,8 +105,38 @@ public class MyAdapter extends RecyclerView.Adapter {
         }
         return data.size();
     }
+
     public Character getItem(int pos){
         return data.get(pos);
+    }
+
+    private static class GetImageRequest extends Request{
+        private ViewHolder h;
+        private int count;
+        private MyAdapter adapter;
+        private Character item;
+        GetImageRequest(MyAdapter adapter,ViewHolder h,Character item){
+            this.adapter = adapter;
+            this.h = h;
+            count = h.counter;
+            this.item = item;
+        }
+        @Override
+        protected void onPostExecute(Object response) {
+            super.onPostExecute(response);
+            if(response==null){
+                return;
+            }
+            Bitmap img = (Bitmap)response;
+            CommonOps.cacheJpeg(adapter.context, img, item.getImgName());
+            if(count!=h.counter){
+                return;
+            }
+            Drawable d = item.getImage(adapter.context);
+            if(d!=null) {
+                h.image.setImageDrawable(d);
+            }
+        }
     }
 
     private class ViewHolder extends RecyclerView.ViewHolder{

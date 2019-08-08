@@ -4,13 +4,12 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
-import android.os.AsyncTask;
 import android.util.Log;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -27,13 +26,6 @@ public class CommonOps {
 
     public static String getCachedImagesDir(Context context){
         File f = new File(context.getApplicationInfo().dataDir+File.separator+"cached_photos"+File.separator);
-        if(!f.isDirectory()){
-            f.mkdirs();
-        }
-        return f.toString();
-    }
-    public static String getCachedInfoDir(Context context){
-        File f = new File(context.getApplicationInfo().dataDir+File.separator+"cached_info"+File.separator);
         if(!f.isDirectory()){
             f.mkdirs();
         }
@@ -57,9 +49,32 @@ public class CommonOps {
             catch(Exception ex) {}
         }
     }
-    public static void cacheSources(Context context, String data){
+    public static JSONArray addNextSources(Context context,String response){
+        JSONArray results = new JSONArray();
+        JSONArray sources = CommonOps.getSources(context);
+        if(sources==null){
+            sources = new JSONArray();
+        }
+        try {
+            JSONObject obj = new JSONObject(response);
+            JSONObject o = obj.getJSONObject("info");
+            String link = o.getString("next");
+            SharedPreferences sp = CommonOps.getSharedPreferences(context);
+            sp.edit().putString("next", link).apply();
+            JSONArray arr = obj.getJSONArray("results");
+            for (int i = 0; i < arr.length(); i++) {
+                results.put(arr.get(i));
+                sources.put(arr.get(i));
+            }
+        } catch (JSONException exc) {
+            Log.e(TAG, Log.getStackTraceString(exc));
+        }
+        CommonOps.cacheSources(context,sources.toString());
+        return results;
+    }
+    private static void cacheSources(Context context, String data){
         String path = context.getApplicationInfo().dataDir+File.separator+"SOURCES.txt";
-        writeToFile(context,path,data);
+        writeToFile(path,data);
     }
     public static Drawable getCachedImage(Context context, String name){
         return Drawable.createFromPath(getCachedImagesDir(context)+name);
@@ -78,12 +93,12 @@ public class CommonOps {
     public static String getRawSources(Context context){
         File f = new File(context.getApplicationInfo().dataDir+File.separator+"SOURCES.txt");
         if(f.isFile()){
-            String src = readFromFile(context,f.getPath());
+            String src = readFromFile(f.getPath());
             return src;
         }
         return null;
     }
-    private static void writeToFile(Context context, String path, String data) {
+    private static void writeToFile(String path, String data) {
         try {
             FileOutputStream fos = new FileOutputStream (new File(path));
             byte[] bts = data.getBytes();
@@ -93,7 +108,7 @@ public class CommonOps {
             Log.e(TAG, Log.getStackTraceString(exc));
         }
     }
-    private static String readFromFile(Context context, String path) {
+    private static String readFromFile(String path) {
         String str = null;
         try {
             FileInputStream fis = new FileInputStream(new File(path));
@@ -110,18 +125,5 @@ public class CommonOps {
     private static final String spTag = "RickMorty";
     public static SharedPreferences getSharedPreferences(Context context){
         return context.getSharedPreferences(spTag,0);
-    }
-
-    public static String getServerResponse(String request){
-        MessageToServer msg = new MessageToServer();
-        msg.execute(request);
-        try{
-            while (msg.getStatus() != AsyncTask.Status.FINISHED) {
-                Thread.sleep(300);
-            }
-        }catch(InterruptedException exc){
-            Log.e(TAG,Log.getStackTraceString(exc));
-        }
-        return msg.getServerTextResponse();
     }
 }

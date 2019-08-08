@@ -1,13 +1,10 @@
 package example.rickmortyinfo;
 
-import android.content.SharedPreferences;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,8 +13,6 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 /**
  * Created by Draic0 on 01.08.2019.
@@ -27,10 +22,10 @@ public class FragmentList extends Fragment {
 
     private static final String TAG = "FragmentList";
 
-    private MyAdapter adapter;
-    private ProgressBar pb;
-    private TextView label;
-    private LinearLayout waitPanel;
+    MyAdapter adapter;
+    ProgressBar pb;
+    TextView label;
+    LinearLayout waitPanel;
 
     public FragmentList() {}
 
@@ -70,26 +65,8 @@ public class FragmentList extends Fragment {
                     waitPanel.setVisibility(View.VISIBLE);
                     label.setText("Loading...");
                     pb.setVisibility(View.VISIBLE);
-                    Thread trd = new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            final JSONArray arr = getNextSources();
-                            getActivity().runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    if(arr==null){
-                                        label.setText("Could not load data...");
-                                        pb.setVisibility(View.GONE);
-                                    }else {
-                                        waitPanel.setVisibility(View.GONE);
-                                        adapter.addMoreSources(arr);
-                                    }
-                                    addingSources = false;
-                                }
-                            });
-                        }
-                    });
-                    trd.start();
+                    NextContentRequest rqst = new NextContentRequest(FragmentList.this);
+                    rqst.execute(link);
                 }else{
                     waitPanel.setVisibility(View.GONE);
                 }
@@ -97,35 +74,23 @@ public class FragmentList extends Fragment {
         });
     }
 
-    private JSONArray getNextSources() {
-        String link = CommonOps.getSharedPreferences(getActivity()).getString("next", "");
-        if (link.equals("")) {
-            return null;
+    private static class NextContentRequest extends Request{
+        private FragmentList fragment;
+        NextContentRequest(FragmentList fragment){
+            this.fragment = fragment;
         }
-        String response = CommonOps.getServerResponse(link);
-        if (response == null) {
-            return null;
-        }
-        JSONArray results = new JSONArray();
-        JSONArray sources = CommonOps.getSources(getActivity());
-        if(sources==null){
-            sources = new JSONArray();
-        }
-        try {
-            JSONObject obj = new JSONObject(response);
-            JSONObject o = obj.getJSONObject("info");
-            link = o.getString("next");
-            SharedPreferences sp = CommonOps.getSharedPreferences(getActivity());
-            sp.edit().putString("next", link).apply();
-            JSONArray arr = obj.getJSONArray("results");
-            for (int i = 0; i < arr.length(); i++) {
-                results.put(arr.get(i));
-                sources.put(arr.get(i));
+        @Override
+        protected void onPostExecute(Object response) {
+            super.onPostExecute(response);
+            JSONArray arr = CommonOps.addNextSources(fragment.getActivity(),(String)response);
+            if(arr==null){
+                fragment.label.setText("Could not load data...");
+                fragment.pb.setVisibility(View.GONE);
+            }else {
+                fragment.waitPanel.setVisibility(View.GONE);
+                fragment.adapter.addMoreSources(arr);
             }
-        } catch (JSONException exc) {
-            Log.e(TAG, Log.getStackTraceString(exc));
+            addingSources = false;
         }
-        CommonOps.cacheSources(getActivity(),sources.toString());
-        return results;
     }
 }
